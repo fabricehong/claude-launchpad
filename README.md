@@ -6,6 +6,10 @@
 
 Claude Launchpad is a minimalist web UI that starts `claude remote-control` sessions on a server you own, so you can pilot them from the official Claude mobile/web app without ever opening a terminal.
 
+<p align="center">
+  <img src="./docs/demo.gif" alt="Claude Launchpad demo — browse project directories, select one, launch a Claude Code session" width="700">
+</p>
+
 ## Why
 
 Anthropic ships a built-in **Remote Control** feature in Claude Code: once a session runs on your machine with `claude remote-control`, you can drive it from the Claude mobile app or claude.ai/code. The catch — *you still have to SSH in and start that session yourself*, from a terminal, every time you want to begin a new task.
