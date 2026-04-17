@@ -1,0 +1,31 @@
+{
+  "name": "claude-launchpad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web app to launch and manage Claude Code remote-control sessions on a remote Linux machine, so you can code from the Claude mobile app or claude.ai/code.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "tsx watch server/index.ts",
+    "client:dev": "vite client",
+    "build": "vite build client --outDir ../server/public",
+    "start": "tsx server/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
