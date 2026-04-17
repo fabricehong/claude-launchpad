@@ -3,13 +3,13 @@ import { readdir } from 'fs/promises';
 import path from 'path';
 
 const router = Router();
-const ROOT = process.env.ROOT_DIR ?? '/root';
+const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
 
 router.get('/', async (req, res) => {
   const requested = (req.query.path as string) || ROOT;
   const resolved = path.resolve(requested);
 
-  if (!resolved.startsWith(ROOT)) {
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
     res.status(403).json({ error: 'Access denied' });
     return;
   }

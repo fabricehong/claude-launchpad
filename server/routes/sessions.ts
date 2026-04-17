@@ -3,7 +3,7 @@ import path from 'path';
 import { listSessions, hasSession, startSession, killSession, capturePane } from '../utils/tmux.js';
 
 const router = Router();
-const ROOT = process.env.ROOT_DIR ?? '/root';
+const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
 const VALID_NAME = /^[a-zA-Z0-9_-]+$/;
 
 router.get('/', async (_req, res) => {
@@ -30,7 +30,7 @@ router.post('/start', async (req, res) => {
   }
 
   const resolved = path.resolve(dir);
-  if (!resolved.startsWith(ROOT)) {
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
     res.status(403).json({ error: 'Access denied' });
     return;
   }
