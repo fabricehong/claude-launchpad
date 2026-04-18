@@ -75,6 +75,52 @@ When running `claude` via a non-interactive SSH (`ssh <your-server> "claude --ve
 
 This does **not** affect the deployed app (tmux panes spawn login shells that load nvm), but it breaks ad-hoc SSH debugging. Use `bash -ilc '…'` or a tmux session to get a proper login shell when invoking claude directly.
 
+## MCP servers from `.mcp.json` missing when Launchpad runs as a systemd service
+
+**Symptom**
+
+- Running `claude --remote-control` directly over SSH in a project directory: MCP servers from `.mcp.json` are visible and usable.
+- Launching the same directory via Claude Launchpad (deployed as a systemd service): typing `/mcp` in the Claude app shows the MCP server as missing or failed.
+
+**Root cause**
+
+systemd services do **not** inherit `~/.bashrc`, `~/.zshrc`, or any login shell initialization. The unit's `Environment="PATH=..."` directive is the only `PATH` the service and all its child processes see — including the tmux panes spawned via `send-keys`, and any MCP server command that runs in them.
+
+If a project's `.mcp.json` declares a server launched via `uv`, `pipx`, or any binary installed outside the default system paths (commonly `~/.local/bin`, `~/.cargo/bin`, `~/.volta/bin`), the MCP server command fails with something like `uv: command not found`. Claude Code logs the failure but the UI simply shows no MCP tool — easy to mistake for "MCP not approved" or "config wrong".
+
+Over SSH, `~/.bashrc` populates the `PATH` correctly, so the same `.mcp.json` works — which is why this only surfaces through Launchpad.
+
+**Fix**
+
+Add the relevant binary directories to the unit's `PATH`. Example for an Ubuntu droplet where `uv` is installed via the official installer:
+
+```ini
+# /etc/systemd/system/claude-launchpad.service
+Environment="PATH=/root/.local/bin:/root/.nvm/versions/node/v25.0.0/bin:/usr/local/bin:/usr/bin:/bin"
+```
+
+Then:
+
+```bash
+systemctl daemon-reload
+systemctl restart claude-launchpad.service
+```
+
+**Existing tmux sessions keep the old PATH** — kill and recreate any session whose project needs the updated `PATH` (via the Launchpad UI, or `tmux kill-session -t <name>`).
+
+**Diagnostic**
+
+```bash
+# Effective PATH of the running service
+PID=$(systemctl show --property=MainPID --value claude-launchpad.service)
+cat /proc/$PID/environ | tr '\0' '\n' | grep '^PATH='
+
+# Compare with your interactive PATH
+echo $PATH
+```
+
+If the service's `PATH` is missing the directory that contains `uv` (or whatever your MCP server binary is), that's the issue.
+
 ## Backend improvement ideas
 
 - Parse the tmux pane after the sleep and surface known failure modes to the UI:

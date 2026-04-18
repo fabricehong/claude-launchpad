@@ -112,6 +112,8 @@ npm start
 
 Or use a systemd unit, pm2, Docker, etc. Any process supervisor works.
 
+> ⚠️ **systemd + MCP servers**: systemd units don't inherit your login shell's `PATH`. If your projects use `.mcp.json` with servers launched via `uv`, `pipx`, or anything in `~/.local/bin`, the MCP servers will fail to spawn silently. Add the binary directories to your unit's `Environment="PATH=..."`. See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for details.
+
 ## Exposing safely
 
 The built-in auth is a minimal shared-secret check over plaintext headers. Before exposing Launchpad to the public internet you **must** either:
