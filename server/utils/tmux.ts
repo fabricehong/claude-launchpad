@@ -1,35 +1,4 @@
 import { execFile } from 'child_process';
-import path from 'path';
-
-/**
- * Turns an absolute directory into a human-readable label suitable for
- * `claude --remote-control <label>`.
- *
- * Returns the path **relative to `rootDir`**, preserving slashes so the
- * Claude mobile app shows the project's nested structure
- * (e.g. `ecommerce-shop/backend`). Any character outside
- * `[a-zA-Z0-9_/-]` is replaced with `-`, runs of dashes are collapsed,
- * and leading/trailing dashes are trimmed.
- *
- * Edge cases:
- * - If `absoluteDir === rootDir`, falls back to `basename(rootDir)`
- *   (e.g. `claude-launchpad-demo`) rather than an empty label.
- * - If sanitisation leaves nothing, falls back to `'session'`.
- *
- * The result is safe to double-quote in a shell string (no `"`, `$`,
- * backtick or backslash can survive the whitelist).
- */
-export function dirToDisplayName(absoluteDir: string, rootDir: string): string {
-  let rel = path.relative(rootDir, absoluteDir);
-  if (rel === '') {
-    rel = path.basename(rootDir) || 'root';
-  }
-  const sanitised = rel
-    .replace(/[^a-zA-Z0-9_/-]/g, '-')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return sanitised || 'session';
-}
 
 function exec(cmd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -66,12 +35,12 @@ export async function hasSession(name: string): Promise<boolean> {
   }
 }
 
-export async function startSession(name: string, dir: string, displayName: string, continueConversation = false): Promise<void> {
+export async function startSession(name: string, dir: string, continueConversation = false): Promise<void> {
   const claudeBin = process.env.CLAUDE_BIN ?? 'claude';
-  // `displayName` is sanitised by `dirToDisplayName` (whitelist excludes `"`,
-  // `$`, backtick, backslash) so double-quoting it in the shell string is safe.
+  // `name` is validated by the /^[a-zA-Z0-9_-]+$/ regex in the route, so
+  // double-quoting it in the shell string is safe (no `"`, `$`, backtick, backslash).
   const suffix = continueConversation ? ' --continue' : '';
-  const cmd = `${claudeBin} --remote-control "${displayName}"${suffix}`;
+  const cmd = `${claudeBin} --remote-control "${name}"${suffix}`;
   console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
   await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
   await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);

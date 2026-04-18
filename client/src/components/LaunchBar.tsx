@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import type { Credentials } from '../api.ts';
-import { startSession } from '../api.ts';
+import { startSession, getSessions } from '../api.ts';
 
 interface Props {
   creds: Credentials;
@@ -14,9 +14,34 @@ function toSessionName(dir: string): string {
   return name.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
 }
 
+function makeUniqueSessionName(dir: string, existing: Set<string>): string {
+  const base = toSessionName(dir);
+  if (!existing.has(base)) return base;
+  let i = 2;
+  while (existing.has(`${base}-${i}`)) i++;
+  return `${base}-${i}`;
+}
+
 export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Props) {
   const [name, setName] = useState(toSessionName(dir));
   const [loading, setLoading] = useState(false);
+  const userEditedRef = useRef(false);
+
+  useEffect(() => {
+    userEditedRef.current = false;
+    let cancelled = false;
+    getSessions(creds).then(({ data }) => {
+      if (cancelled || userEditedRef.current) return;
+      const existing = new Set((data?.sessions ?? []).map(s => s.name));
+      setName(makeUniqueSessionName(dir, existing));
+    });
+    return () => { cancelled = true; };
+  }, [creds, dir]);
+
+  function handleNameChange(value: string) {
+    userEditedRef.current = true;
+    setName(value);
+  }
 
   async function launch(continueConversation: boolean) {
     setLoading(true);
@@ -55,7 +80,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
         <input
           type="text"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={e => handleNameChange(e.target.value)}
           placeholder="Session name"
           required
           pattern="[a-zA-Z0-9_\-]+"
