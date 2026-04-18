@@ -61,18 +61,18 @@ export function getSessions(creds: Credentials): Promise<ApiResult<{ sessions: S
   return request<{ sessions: Session[] }>('/api/sessions', creds);
 }
 
-// `continueConversation` is kept in the wire format and on the server side
-// but is not currently exposed in the UI — see ROADMAP.md ("Resume a previous
-// session") for why it's disabled today.
+export type ModelChoice = 'default' | 'haiku';
+
 export function startSession(
   creds: Credentials,
   dir: string,
   name: string,
-  continueConversation = false
+  continueConversation = false,
+  model: ModelChoice = 'default'
 ): Promise<ApiResult<{ ok: boolean; name: string; dir: string }>> {
   return request('/api/sessions/start', creds, {
     method: 'POST',
-    body: JSON.stringify({ dir, name, continueConversation }),
+    body: JSON.stringify({ dir, name, continueConversation, model }),
   });
 }
 

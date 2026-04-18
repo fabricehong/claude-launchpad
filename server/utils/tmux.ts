@@ -35,12 +35,21 @@ export async function hasSession(name: string): Promise<boolean> {
   }
 }
 
-export async function startSession(name: string, dir: string, continueConversation = false): Promise<void> {
+export type ModelChoice = 'default' | 'haiku';
+
+export async function startSession(
+  name: string,
+  dir: string,
+  continueConversation = false,
+  model: ModelChoice = 'default'
+): Promise<void> {
   const claudeBin = process.env.CLAUDE_BIN ?? 'claude';
   // `name` is validated by the /^[a-zA-Z0-9_-]+$/ regex in the route, so
   // double-quoting it in the shell string is safe (no `"`, `$`, backtick, backslash).
-  const suffix = continueConversation ? ' --continue' : '';
-  const cmd = `${claudeBin} --remote-control "${name}"${suffix}`;
+  const parts = [`${claudeBin} --remote-control "${name}"`];
+  if (continueConversation) parts.push('--continue');
+  if (model === 'haiku') parts.push('--model haiku');
+  const cmd = parts.join(' ');
   console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
   await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
   await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);

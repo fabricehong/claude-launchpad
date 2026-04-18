@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
-import type { Credentials } from '../api.ts';
+import type { Credentials, ModelChoice } from '../api.ts';
 import { startSession, getSessions } from '../api.ts';
 
 interface Props {
@@ -25,6 +25,7 @@ function makeUniqueSessionName(dir: string, existing: Set<string>): string {
 export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Props) {
   const [name, setName] = useState(toSessionName(dir));
   const [loading, setLoading] = useState(false);
+  const [model, setModel] = useState<ModelChoice>('default');
   const userEditedRef = useRef(false);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
   async function launch(continueConversation: boolean) {
     setLoading(true);
 
-    const { error } = await startSession(creds, dir, name, continueConversation);
+    const { error } = await startSession(creds, dir, name, continueConversation, model);
 
     setLoading(false);
 
@@ -76,6 +77,47 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
       <p style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '0.5rem', fontFamily: 'monospace' }}>
         {dir}
       </p>
+      <div
+        role="radiogroup"
+        aria-label="Model"
+        style={{
+          display: 'inline-flex',
+          background: '#0f1117',
+          border: '1px solid #2d3748',
+          borderRadius: '6px',
+          padding: '2px',
+          marginBottom: '0.5rem',
+          gap: '2px',
+        }}
+      >
+        {([
+          { value: 'default', label: 'Pro' },
+          { value: 'haiku', label: 'Fast' },
+        ] as const).map(opt => {
+          const active = model === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setModel(opt.value)}
+              style={{
+                background: active ? '#4f46e5' : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                color: active ? '#fff' : '#a0aec0',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                padding: '0.25rem 0.75rem',
+                cursor: 'pointer',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
         <input
           type="text"

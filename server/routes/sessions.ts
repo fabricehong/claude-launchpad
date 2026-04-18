@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
-import { listSessions, hasSession, startSession, killSession, capturePane } from '../utils/tmux.js';
+import { listSessions, hasSession, startSession, killSession, capturePane, type ModelChoice } from '../utils/tmux.js';
 
 const router = Router();
 const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
@@ -17,7 +17,14 @@ router.get('/', async (_req, res) => {
 });
 
 router.post('/start', async (req, res) => {
-  const { dir, name, continueConversation } = req.body as { dir?: string; name?: string; continueConversation?: boolean };
+  const { dir, name, continueConversation, model } = req.body as {
+    dir?: string;
+    name?: string;
+    continueConversation?: boolean;
+    model?: ModelChoice;
+  };
+
+  const modelChoice: ModelChoice = model === 'haiku' ? 'haiku' : 'default';
 
   if (!name || !VALID_NAME.test(name)) {
     res.status(400).json({ error: 'Invalid session name (only a-z, A-Z, 0-9, _ and - allowed)' });
@@ -42,7 +49,7 @@ router.post('/start', async (req, res) => {
 
   try {
     console.log(`[sessions/start] Starting session "${name}" in ${resolved}`);
-    await startSession(name, resolved, continueConversation);
+    await startSession(name, resolved, continueConversation, modelChoice);
     // Wait a moment and capture initial output for diagnostics
     await new Promise(r => setTimeout(r, 2000));
     let output = '';
