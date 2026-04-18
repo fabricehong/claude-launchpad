@@ -12,19 +12,36 @@ Claude Launchpad is a minimalist web UI that starts `claude remote-control` sess
 
 ## Why
 
-Anthropic ships a built-in **Remote Control** feature in Claude Code: once a session runs on your machine with `claude remote-control`, you can drive it from the Claude mobile app or claude.ai/code. The catch — *you still have to SSH in and start that session yourself*, from a terminal, every time you want to begin a new task.
+Claude Launchpad is a thin wrapper. It runs a small web UI on your server whose only job is to start `claude remote-control` sessions you can then drive from the Claude mobile app. That's it — no terminal, no AI magic of its own.
 
-That's the friction Launchpad removes. It runs on your server as a small web app. From your phone or laptop browser, you:
+The value is in what the combination unlocks:
 
-1. Open the Launchpad URL
-2. Pick a directory
-3. Tap **Launch**
+- **Claude Code on a machine you own** — full shell, filesystem, git, your `CLAUDE.md` conventions, your MCP servers, your files. Nothing sandboxed.
+- **Always reachable from the Claude mobile app** — no SSH, no laptop. You open a browser tab on your phone, pick a directory, tap *Launch*. The session shows up in the app's session picker.
+- **A knowledge base you control** — typically a Markdown vault versioned with Git. Because Claude Code can read and *write* into this vault, the assistant's own context (`CLAUDE.md`, skills, `.mcp.json`, notes) evolves over time. Each session inherits what the previous one learned or refined.
 
-The interesting bit is step 2. **Each directory on your server is effectively a pre-configured agent** — its `CLAUDE.md` shapes the behaviour, it has access to specific files (a code repo, a notes vault, a dataset), and to whichever MCP servers the host runs. Picking a directory = picking which agent you're starting. Going from *"one coding session on the go"* to *"a dozen task-specific agents I can start in three taps from my phone"* is what turns the [scenarios below](#beyond-the-launcher--what-actually-runs) from nice ideas into things you actually run.
+The last point is the one people tend to miss. If your operating knowledge lives in a Git-versioned vault, a Claude Code session can update its own working files: append a new rule to a `CLAUDE.md`, add a skill, install an MCP server, write a note in the right folder. Next time you launch a session in the same directory, that change is just there. The assistant grows with use instead of forgetting at every new conversation.
 
-A `claude remote-control` session spawns in a tmux pane with that directory as its working context, and shows up in your Claude mobile app's session picker. Your laptop can stay closed.
+Launchpad is what makes that loop reachable from your pocket.
 
-**Claude Launchpad is not a terminal emulator.** It has no embedded xterm, by design. The work happens in the official Claude app — Launchpad is just the remote-accessible *start button*.
+## Who this is for
+
+This project makes sense if most of the following apply:
+
+- You already run (or want to run) Claude Code on a server you control
+- You've built or are willing to build a Markdown knowledge base versioned with Git, where procedures and references live as files
+- You've used Claude.ai with connectors (Gmail, Calendar, Drive, Notion…) and hit its limits: static Project uploads, no sub-agents, no hooks, no way for the assistant to modify its own configuration
+
+If you're happy with Claude.ai + Notion/Drive connectors for general assistant tasks, you probably don't need Launchpad. Pick it up when you want the Claude Code machinery — not just a chat with tools — reachable from your phone.
+
+## Connectors and MCPs stack up
+
+When a `claude remote-control` session is driven from the official Claude app, the app's connectors (Gmail, Calendar, Drive, Notion, etc.) stay available to the session. You don't trade them for Claude Code — you *add* to them:
+
+- **Local MCP servers** on your server: filesystem, shell, git, plus any community or homemade MCP that fits your workflow
+- **MCPs Claude Code builds for you on demand** — if a small integration keeps coming up, you can ask the session to write it as a local MCP and wire it into `.mcp.json`. Next session, it's just there.
+
+The mental model isn't "Claude.ai *or* Launchpad". It's the app's connectors, plus your server's MCPs, plus an assistant that can extend its own toolbox over time.
 
 ## Beyond the launcher — what actually runs
 
