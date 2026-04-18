@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
-import { listSessions, hasSession, startSession, killSession, capturePane } from '../utils/tmux.js';
+import { listSessions, hasSession, startSession, killSession, capturePane, dirToDisplayName } from '../utils/tmux.js';
 
 const router = Router();
 const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
@@ -41,8 +41,9 @@ router.post('/start', async (req, res) => {
   }
 
   try {
-    console.log(`[sessions/start] Starting session "${name}" in ${resolved}`);
-    await startSession(name, resolved, continueConversation);
+    const displayName = dirToDisplayName(resolved, ROOT);
+    console.log(`[sessions/start] Starting session "${name}" in ${resolved} (Claude display name: "${displayName}")`);
+    await startSession(name, resolved, displayName, continueConversation);
     // Wait a moment and capture initial output for diagnostics
     await new Promise(r => setTimeout(r, 2000));
     let output = '';
