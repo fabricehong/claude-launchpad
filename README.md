@@ -52,7 +52,7 @@ If you want to *type* into a terminal from your phone, pick one of the others. I
 
 - 📱 Mobile-first responsive UI (tabs on small screens, two-column on desktop)
 - 📂 Browse any subdirectory under a configurable root
-- 🚀 Launch `claude remote-control --spawn=same-dir` in a fresh tmux session
+- 🚀 Launch `claude --remote-control` in a fresh tmux session
 - 👀 Live tmux pane output viewer for debugging
 - ☠️ One-click kill for any session
 - 🔐 Stateless header-based auth

@@ -3,7 +3,7 @@ import path from 'path';
 
 /**
  * Turns an absolute directory into a human-readable label suitable for
- * `claude remote-control --name <label>`.
+ * `claude --remote-control <label>`.
  *
  * Returns the path **relative to `rootDir`**, preserving slashes so the
  * Claude mobile app shows the project's nested structure
@@ -68,33 +68,13 @@ export async function hasSession(name: string): Promise<boolean> {
 
 export async function startSession(name: string, dir: string, displayName: string, continueConversation = false): Promise<void> {
   const claudeBin = process.env.CLAUDE_BIN ?? 'claude';
-  if (continueConversation) {
-    // NOTE: this branch is currently unreachable from the UI. `claude --continue`
-    // only resumes conversations that were persisted locally in
-    // ~/.claude/projects/<encoded-dir>/*.jsonl — i.e. sessions started in plain
-    // interactive mode on this machine. Sessions driven via `claude remote-control`
-    // (the default path below) live server-side at Anthropic and do NOT write
-    // such a file, so --continue finds nothing and the Claude mobile app shows
-    // no active session either. See ROADMAP.md ("Resume a previous session")
-    // for the upstream feature that would unblock this.
-    const cmd = `${claudeBin} --continue`;
-    console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd} + /remote-control ${displayName}`);
-    await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
-    await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);
-    // Wait for claude to load before sending /remote-control <displayName>.
-    // The slash-command treats the rest of the line as the session title;
-    // `displayName` is already sanitised to safe characters so no quoting
-    // is needed (and it's typed into Claude's REPL, not a shell).
-    await new Promise(r => setTimeout(r, 5000));
-    await exec('tmux', ['send-keys', '-t', name, `/remote-control ${displayName}`, 'Enter']);
-  } else {
-    // `displayName` is sanitised by `dirToDisplayName` (whitelist excludes `"`,
-    // `$`, backtick, backslash) so double-quoting it in the shell string is safe.
-    const cmd = `${claudeBin} remote-control --spawn=same-dir --name "${displayName}"`;
-    console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
-    await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
-    await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);
-  }
+  // `displayName` is sanitised by `dirToDisplayName` (whitelist excludes `"`,
+  // `$`, backtick, backslash) so double-quoting it in the shell string is safe.
+  const suffix = continueConversation ? ' --continue' : '';
+  const cmd = `${claudeBin} --remote-control "${displayName}"${suffix}`;
+  console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
+  await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
+  await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);
   console.log(`[tmux] Session "${name}" created and command sent`);
 }
 

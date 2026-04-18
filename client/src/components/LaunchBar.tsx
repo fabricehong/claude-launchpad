@@ -18,11 +18,10 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
   const [name, setName] = useState(toSessionName(dir));
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function launch(continueConversation: boolean) {
     setLoading(true);
 
-    const { error } = await startSession(creds, dir, name);
+    const { error } = await startSession(creds, dir, name, continueConversation);
 
     setLoading(false);
 
@@ -31,8 +30,14 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
       return;
     }
 
-    onToast(`Session "${name}" started - use "Show Output" to monitor`, 'success');
+    const verb = continueConversation ? 'resumed' : 'started';
+    onToast(`Session "${name}" ${verb} - use "Show Output" to monitor`, 'success');
     onSessionStarted();
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    void launch(false);
   }
 
   return (
@@ -81,6 +86,23 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
           }}
         >
           {loading ? 'Launching…' : 'Launch'}
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void launch(true)}
+          style={{
+            background: 'transparent',
+            border: '1px solid #4f46e5',
+            borderRadius: '6px',
+            color: '#a5b4fc',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            padding: '0.5rem 1rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Continue last
         </button>
       </form>
     </div>

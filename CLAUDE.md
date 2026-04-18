@@ -41,7 +41,7 @@ Full-stack TypeScript app: Express backend + React/Vite frontend, single repo, s
 
 - **No hardcoded `/root`** — `ROOT_DIR` comes from `.env` server-side; client discovers the root from the first browse API response
 - **Auth is stateless** — credentials live in React state only (no localStorage, no cookies, no JWT); lost on tab close
-- **tmux = session persistence** — each claude session is a named tmux session; `claude remote-control --spawn=same-dir` is sent via `send-keys`
+- **tmux = session persistence** — each claude session is a named tmux session; `claude --remote-control <label>` is sent via `send-keys`
 - **Mobile layout** — two-column grid on desktop, tab-based (`Browse` / `Sessions`) on mobile (≤700px via CSS classes in `index.css`)
 
 ## Environment variables

@@ -58,7 +58,7 @@ SSH to your server and reproduce the spawn manually with the debug log enabled:
 cd /root/<some-dir>
 tmux new-session -d -s probe -c /root/<some-dir>
 tmux send-keys -t probe \
-  '/root/.nvm/versions/node/v25.0.0/bin/claude remote-control --spawn=same-dir --debug-file /tmp/probe.log -v' Enter
+  '/root/.nvm/versions/node/v25.0.0/bin/claude --remote-control "probe" --debug-file /tmp/probe.log -v' Enter
 
 sleep 8
 tmux capture-pane -t probe -p -S -80
