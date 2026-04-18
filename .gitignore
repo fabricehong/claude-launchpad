@@ -9,5 +9,5 @@ dist/
 
 # High-quality GIF sources kept locally for re-exports;
 # only the optimized docs/demo.gif is committed.
-docs/demo-orig.gif
+docs/others
 
