@@ -28,7 +28,9 @@ export async function listSessions(): Promise<TmuxSession[]> {
 
 export async function hasSession(name: string): Promise<boolean> {
   try {
-    await exec('tmux', ['has-session', '-t', name]);
+    // `=` prefix forces an exact match; otherwise tmux matches by prefix
+    // (e.g. `has-session -t foo` matches an existing `foo-bar`).
+    await exec('tmux', ['has-session', '-t', `=${name}`]);
     return true;
   } catch {
     return false;
@@ -52,14 +54,16 @@ export async function startSession(
   const cmd = parts.join(' ');
   console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
   await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
-  await exec('tmux', ['send-keys', '-t', name, cmd, 'Enter']);
+  // `=name:` targets the active pane of the exact session (pane targets
+  // don't accept the bare `=name` form accepted by session targets).
+  await exec('tmux', ['send-keys', '-t', `=${name}:`, cmd, 'Enter']);
   console.log(`[tmux] Session "${name}" created and command sent`);
 }
 
 export async function capturePane(name: string, lines = 50): Promise<string> {
-  return exec('tmux', ['capture-pane', '-t', name, '-p', '-S', `-${lines}`]);
+  return exec('tmux', ['capture-pane', '-t', `=${name}:`, '-p', '-S', `-${lines}`]);
 }
 
 export async function killSession(name: string): Promise<void> {
-  await exec('tmux', ['kill-session', '-t', name]);
+  await exec('tmux', ['kill-session', '-t', `=${name}`]);
 }
