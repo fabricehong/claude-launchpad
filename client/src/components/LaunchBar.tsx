@@ -74,7 +74,13 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
       borderRadius: '8px',
       padding: '0.875rem',
     }}>
-      <p style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '0.5rem', fontFamily: 'monospace' }}>
+      <p style={{
+        fontSize: '0.75rem',
+        color: '#718096',
+        marginBottom: '0.5rem',
+        fontFamily: 'monospace',
+        overflowWrap: 'anywhere',
+      }}>
         {dir}
       </p>
       <div
@@ -118,7 +124,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
           );
         })}
       </div>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <input
           type="text"
           value={name}
@@ -128,7 +134,8 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
           pattern="[a-zA-Z0-9_\-]+"
           title="Only letters, numbers, _ and - are allowed"
           style={{
-            flex: 1,
+            flex: '1 1 100%',
+            minWidth: 0,
             background: '#0f1117',
             border: '1px solid #2d3748',
             borderRadius: '6px',

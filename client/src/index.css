@@ -41,6 +41,9 @@ input {
 .tab-panel {
   display: flex;
   flex-direction: column;
+  /* Grid items default to min-width: auto, which lets long content (folder
+     names, paths) push the column wider than the viewport on mobile. */
+  min-width: 0;
 }
 
 /* Mobile */

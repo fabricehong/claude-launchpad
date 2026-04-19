@@ -46,12 +46,13 @@ export default function FileBrowser({ creds, selectedDir, onSelect, onToast, onS
         <p style={{ color: '#4a5568', fontSize: '0.875rem' }}>No subdirectories</p>
       )}
 
-      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
         {dirs.map((dir: DirEntry) => (
-          <li key={dir.path} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <li key={dir.path} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
             <button
               onClick={() => navigate(dir.path)}
               style={dirBtnStyle}
+              title={dir.name}
             >
               📁 {dir.name}
             </button>
@@ -97,6 +98,7 @@ const navBtnStyle: CSSProperties = {
 
 const dirBtnStyle: CSSProperties = {
   flex: 1,
+  minWidth: 0,
   background: 'transparent',
   border: 'none',
   borderRadius: '6px',
@@ -104,4 +106,7 @@ const dirBtnStyle: CSSProperties = {
   fontSize: '0.875rem',
   padding: '0.375rem 0.625rem',
   textAlign: 'left',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 };
