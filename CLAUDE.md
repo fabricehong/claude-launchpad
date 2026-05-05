@@ -49,3 +49,8 @@ Full-stack TypeScript app: Express backend + React/Vite frontend, single repo, s
 See `.env.example`. Key variables:
 - `ROOT_DIR` — base directory users can browse (e.g. `/root` on a Linux server, `/Users/yourname` locally)
 - `CLAUDE_BIN` — full path to the `claude` binary (needed because nvm paths aren't in tmux's environment)
+
+## Conventions
+
+- **Project memories live here, not in auto-memory.** Any preference, invariant, or working-agreement that Claude should retain across conversations belongs in this file (or in a doc delegated from here), not in `~/.claude/projects/.../memory/`. Auto-memory is per-machine and unversioned; this file is the source of truth.
+- **Don't relax existing invariants when adding a new dimension.** When a feature adds a new axis to an entity (e.g. a `pro`/`fast` mode suffix on session names), prior uniqueness/conflict checks must be extended to cover all values of that axis, never silently weakened. Concretely: a session with a given base name may not coexist with another session sharing the same base, regardless of mode.
