@@ -39,25 +39,32 @@ export async function hasSession(name: string): Promise<boolean> {
 
 export type ModelChoice = 'default' | 'haiku';
 
+export function suffixedName(name: string, model: ModelChoice): string {
+  return `${name} - ${model === 'haiku' ? 'fast' : 'pro'}`;
+}
+
 export async function startSession(
   name: string,
   dir: string,
   continueConversation = false,
   model: ModelChoice = 'default'
-): Promise<void> {
+): Promise<string> {
   const claudeBin = process.env.CLAUDE_BIN ?? 'claude';
+  const fullName = suffixedName(name, model);
   // `name` is validated by the /^[a-zA-Z0-9_-]+$/ regex in the route, so
-  // double-quoting it in the shell string is safe (no `"`, `$`, backtick, backslash).
-  const parts = [`${claudeBin} --remote-control "${name}"`];
+  // `fullName` only adds the literal " - pro" / " - fast" suffix — still
+  // safe to double-quote in the shell string (no `"`, `$`, backtick, backslash).
+  const parts = [`${claudeBin} --remote-control "${fullName}"`];
   if (continueConversation) parts.push('--continue');
   if (model === 'haiku') parts.push('--model haiku');
   const cmd = parts.join(' ');
-  console.log(`[tmux] Creating session "${name}" in ${dir}, command: ${cmd}`);
-  await exec('tmux', ['new-session', '-d', '-s', name, '-c', dir]);
+  console.log(`[tmux] Creating session "${fullName}" in ${dir}, command: ${cmd}`);
+  await exec('tmux', ['new-session', '-d', '-s', fullName, '-c', dir]);
   // `=name:` targets the active pane of the exact session (pane targets
   // don't accept the bare `=name` form accepted by session targets).
-  await exec('tmux', ['send-keys', '-t', `=${name}:`, cmd, 'Enter']);
-  console.log(`[tmux] Session "${name}" created and command sent`);
+  await exec('tmux', ['send-keys', '-t', `=${fullName}:`, cmd, 'Enter']);
+  console.log(`[tmux] Session "${fullName}" created and command sent`);
+  return fullName;
 }
 
 export async function capturePane(name: string, lines = 50): Promise<string> {

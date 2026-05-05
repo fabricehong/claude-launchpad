@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import path from 'path';
-import { listSessions, hasSession, startSession, killSession, capturePane, type ModelChoice } from '../utils/tmux.js';
+import { listSessions, hasSession, startSession, killSession, capturePane, suffixedName, type ModelChoice } from '../utils/tmux.js';
 
 const router = Router();
 const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
 const VALID_NAME = /^[a-zA-Z0-9_-]+$/;
+// Accepts both legacy names ("mon-repo") and new suffixed names ("mon-repo - pro" / " - fast")
+// since /kill and /output target whatever already exists in tmux.
+const VALID_FULL_NAME = /^[a-zA-Z0-9_-]+(?: - (?:pro|fast))?$/;
 
 router.get('/', async (_req, res) => {
   try {
@@ -42,24 +45,29 @@ router.post('/start', async (req, res) => {
     return;
   }
 
-  if (await hasSession(name)) {
+  // A given base name can only be active in one mode at a time. Check the bare
+  // base (legacy sessions started before the suffix convention) and both
+  // suffixed variants so the uniqueness invariant survives the new dimension.
+  const proName = suffixedName(name, 'default');
+  const fastName = suffixedName(name, 'haiku');
+  if (await hasSession(name) || await hasSession(proName) || await hasSession(fastName)) {
     res.status(409).json({ error: `Session "${name}" already exists` });
     return;
   }
 
   try {
     console.log(`[sessions/start] Starting session "${name}" in ${resolved}`);
-    await startSession(name, resolved, continueConversation, modelChoice);
+    const fullName = await startSession(name, resolved, continueConversation, modelChoice);
     // Wait a moment and capture initial output for diagnostics
     await new Promise(r => setTimeout(r, 2000));
     let output = '';
     try {
-      output = await capturePane(name);
-      console.log(`[sessions/start] Session "${name}" initial output (${output.length} chars): ${output.slice(0, 200)}`);
+      output = await capturePane(fullName);
+      console.log(`[sessions/start] Session "${fullName}" initial output (${output.length} chars): ${output.slice(0, 200)}`);
     } catch (captureErr) {
-      console.warn(`[sessions/start] Could not capture initial output for "${name}":`, captureErr);
+      console.warn(`[sessions/start] Could not capture initial output for "${fullName}":`, captureErr);
     }
-    res.json({ ok: true, name, dir: resolved, output });
+    res.json({ ok: true, name: fullName, dir: resolved, output });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[sessions/start] Failed to start session "${name}":`, message);
@@ -69,7 +77,7 @@ router.post('/start', async (req, res) => {
 
 router.get('/output/:name', async (req, res) => {
   const { name } = req.params;
-  if (!name || !VALID_NAME.test(name)) {
+  if (!name || !VALID_FULL_NAME.test(name)) {
     res.status(400).json({ error: 'Invalid session name' });
     return;
   }
@@ -91,7 +99,7 @@ router.get('/output/:name', async (req, res) => {
 router.post('/kill', async (req, res) => {
   const { name } = req.body as { name?: string };
 
-  if (!name || !VALID_NAME.test(name)) {
+  if (!name || !VALID_FULL_NAME.test(name)) {
     res.status(400).json({ error: 'Invalid session name' });
     return;
   }
