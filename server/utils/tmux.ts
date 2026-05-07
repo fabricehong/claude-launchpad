@@ -43,6 +43,13 @@ export function suffixedName(name: string, model: ModelChoice): string {
   return `${name} - ${model === 'haiku' ? 'fast' : 'pro'}`;
 }
 
+export async function findFreeBaseName(base: string, model: ModelChoice): Promise<string> {
+  if (!(await hasSession(suffixedName(base, model)))) return base;
+  let i = 2;
+  while (await hasSession(suffixedName(`${base}-${i}`, model))) i++;
+  return `${base}-${i}`;
+}
+
 export async function startSession(
   name: string,
   dir: string,

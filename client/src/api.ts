@@ -63,6 +63,15 @@ export function getSessions(creds: Credentials): Promise<ApiResult<{ sessions: S
 
 export type ModelChoice = 'default' | 'haiku';
 
+export function suggestSessionName(
+  creds: Credentials,
+  dir: string,
+  model: ModelChoice
+): Promise<ApiResult<{ name: string }>> {
+  const url = `/api/sessions/suggest?dir=${encodeURIComponent(dir)}&model=${encodeURIComponent(model)}`;
+  return request<{ name: string }>(url, creds);
+}
+
 export function startSession(
   creds: Credentials,
   dir: string,

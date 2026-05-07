@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import path from 'path';
-import { listSessions, hasSession, startSession, killSession, capturePane, suffixedName, type ModelChoice } from '../utils/tmux.js';
+import { listSessions, hasSession, startSession, killSession, capturePane, suffixedName, findFreeBaseName, type ModelChoice } from '../utils/tmux.js';
+
+function deriveBaseFromDir(dir: string): string {
+  const segment = dir.split('/').filter(Boolean).pop() ?? 'session';
+  return segment.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'session';
+}
 
 const router = Router();
 const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
@@ -17,6 +22,24 @@ router.get('/', async (_req, res) => {
     console.error('[sessions/list] Failed to list sessions:', err);
     res.status(500).json({ error: 'Failed to list sessions' });
   }
+});
+
+router.get('/suggest', async (req, res) => {
+  const dir = typeof req.query.dir === 'string' ? req.query.dir : '';
+  const modelParam = typeof req.query.model === 'string' ? req.query.model : '';
+  if (!dir) {
+    res.status(400).json({ error: 'dir is required' });
+    return;
+  }
+  const resolved = path.resolve(dir);
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
+    res.status(403).json({ error: 'Access denied' });
+    return;
+  }
+  const modelChoice: ModelChoice = modelParam === 'haiku' ? 'haiku' : 'default';
+  const base = deriveBaseFromDir(resolved);
+  const suggested = await findFreeBaseName(base, modelChoice);
+  res.json({ name: suggested });
 });
 
 router.post('/start', async (req, res) => {
@@ -45,19 +68,17 @@ router.post('/start', async (req, res) => {
     return;
   }
 
-  // A given base name can only be active in one mode at a time. Check the bare
-  // base (legacy sessions started before the suffix convention) and both
-  // suffixed variants so the uniqueness invariant survives the new dimension.
-  const proName = suffixedName(name, 'default');
-  const fastName = suffixedName(name, 'haiku');
-  if (await hasSession(name) || await hasSession(proName) || await hasSession(fastName)) {
-    res.status(409).json({ error: `Session "${name}" already exists` });
+  // A session is uniquely identified by its full (suffixed) name. Two sessions
+  // sharing a base but in different modes are distinct identifiers and may coexist.
+  const fullName = suffixedName(name, modelChoice);
+  if (await hasSession(fullName)) {
+    res.status(409).json({ error: `Session "${fullName}" already exists` });
     return;
   }
 
   try {
     console.log(`[sessions/start] Starting session "${name}" in ${resolved}`);
-    const fullName = await startSession(name, resolved, continueConversation, modelChoice);
+    await startSession(name, resolved, continueConversation, modelChoice);
     // Wait a moment and capture initial output for diagnostics
     await new Promise(r => setTimeout(r, 2000));
     let output = '';
