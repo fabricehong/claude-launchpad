@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import type { Credentials, ModelChoice } from '../api.ts';
-import { startSession, getSessions } from '../api.ts';
+import { startSession, suggestSessionName } from '../api.ts';
 
 interface Props {
   creds: Credentials;
@@ -9,35 +9,24 @@ interface Props {
   onSessionStarted: () => void;
 }
 
-function toSessionName(dir: string): string {
-  const name = dir.split('/').filter(Boolean).pop() ?? 'session';
-  return name.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
-}
-
-function makeUniqueSessionName(dir: string, existing: Set<string>): string {
-  const base = toSessionName(dir);
-  if (!existing.has(base)) return base;
-  let i = 2;
-  while (existing.has(`${base}-${i}`)) i++;
-  return `${base}-${i}`;
-}
-
 export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Props) {
-  const [name, setName] = useState(toSessionName(dir));
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState<ModelChoice>('default');
   const userEditedRef = useRef(false);
 
   useEffect(() => {
     userEditedRef.current = false;
+  }, [dir]);
+
+  useEffect(() => {
     let cancelled = false;
-    getSessions(creds).then(({ data }) => {
-      if (cancelled || userEditedRef.current) return;
-      const existing = new Set((data?.sessions ?? []).map(s => s.name));
-      setName(makeUniqueSessionName(dir, existing));
+    suggestSessionName(creds, dir, model).then(({ data }) => {
+      if (cancelled || userEditedRef.current || !data) return;
+      setName(data.name);
     });
     return () => { cancelled = true; };
-  }, [creds, dir]);
+  }, [creds, dir, model]);
 
   function handleNameChange(value: string) {
     userEditedRef.current = true;
@@ -47,6 +36,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
   async function launch(continueConversation: boolean) {
     setLoading(true);
 
+    const launched = name;
     const { error } = await startSession(creds, dir, name, continueConversation, model);
 
     setLoading(false);
@@ -57,8 +47,15 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
     }
 
     const verb = continueConversation ? 'resumed' : 'started';
-    onToast(`Session "${name}" ${verb} - use "Show Output" to monitor`, 'success');
+    onToast(`Session "${launched}" ${verb} - use "Show Output" to monitor`, 'success');
     onSessionStarted();
+
+    // Pull a fresh suggestion so the form is ready for an immediate sibling launch
+    // (e.g. claude-launchpad-2 after claude-launchpad). Skip if the user has typed
+    // something during the request.
+    userEditedRef.current = false;
+    const { data } = await suggestSessionName(creds, dir, model);
+    if (data && !userEditedRef.current) setName(data.name);
   }
 
   function handleSubmit(e: FormEvent) {
