@@ -61,7 +61,7 @@ export function getSessions(creds: Credentials): Promise<ApiResult<{ sessions: S
   return request<{ sessions: Session[] }>('/api/sessions', creds);
 }
 
-export type ModelChoice = 'default' | 'haiku';
+export type ModelChoice = 'default' | 'fast';
 
 export function suggestSessionName(
   creds: Credentials,

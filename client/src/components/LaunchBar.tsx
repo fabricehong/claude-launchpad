@@ -94,8 +94,8 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
         }}
       >
         {([
-          { value: 'default', label: 'Pro' },
-          { value: 'haiku', label: 'Fast' },
+          { value: 'default', label: 'Default' },
+          { value: 'fast', label: 'Fast' },
         ] as const).map(opt => {
           const active = model === opt.value;
           return (

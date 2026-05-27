@@ -37,10 +37,12 @@ export async function hasSession(name: string): Promise<boolean> {
   }
 }
 
-export type ModelChoice = 'default' | 'haiku';
+// 'default' = no --model flag (inherits the claude CLI's configured default);
+// 'fast' = an explicitly cheaper/faster model (currently Sonnet via the `sonnet` alias).
+export type ModelChoice = 'default' | 'fast';
 
 export function suffixedName(name: string, model: ModelChoice): string {
-  return `${name} - ${model === 'haiku' ? 'fast' : 'pro'}`;
+  return `${name} - ${model}`;
 }
 
 export async function findFreeBaseName(base: string, model: ModelChoice): Promise<string> {
@@ -59,11 +61,12 @@ export async function startSession(
   const claudeBin = process.env.CLAUDE_BIN ?? 'claude';
   const fullName = suffixedName(name, model);
   // `name` is validated by the /^[a-zA-Z0-9_-]+$/ regex in the route, so
-  // `fullName` only adds the literal " - pro" / " - fast" suffix — still
+  // `fullName` only adds the literal " - default" / " - fast" suffix — still
   // safe to double-quote in the shell string (no `"`, `$`, backtick, backslash).
   const parts = [`${claudeBin} --remote-control "${fullName}"`];
   if (continueConversation) parts.push('--continue');
-  if (model === 'haiku') parts.push('--model haiku');
+  // `sonnet` is an evergreen alias that always resolves to the latest Sonnet.
+  if (model === 'fast') parts.push('--model sonnet');
   const cmd = parts.join(' ');
   console.log(`[tmux] Creating session "${fullName}" in ${dir}, command: ${cmd}`);
   await exec('tmux', ['new-session', '-d', '-s', fullName, '-c', dir]);
