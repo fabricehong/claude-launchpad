@@ -14,6 +14,22 @@ npx tsc --noEmit                        # type-check server code
 cd client && npx tsc --noEmit          # type-check client code
 ```
 
+### Applying changes in prod (dev-in-prod)
+
+This repo *is* the deployment on the Hetzner droplet (`/root/claude-launchpad`). It runs as the systemd service `claude-launchpad.service` (via `tsx` on the TS source, port 3456, served at https://claude.active-prompts.com). To push edits made directly here into the live app:
+
+```bash
+cd /root/claude-launchpad
+npm run build                               # ONLY if you touched client/ — recompiles the React app into server/public/
+systemctl restart claude-launchpad.service  # picks up server changes (tsx runs the .ts source directly)
+```
+
+- **Server-only changes** (`server/**`) → just `systemctl restart`, no build needed.
+- **Client changes** (`client/**`) → `npm run build` first (prod serves the compiled bundle from `server/public/`), then restart. Vite doesn't empty `server/public/assets/`, so old hashed bundles accumulate — clean up the ones `index.html` no longer references.
+- `KillMode=process` in the unit means running tmux / `claude --remote-control` sessions survive the restart.
+- Verify: `systemctl is-active claude-launchpad.service` (should be `active`, not a looping `activating`) and `curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3456` (should be `200`).
+- Full deployment doc (systemd unit rationale, Caddy/UFW/DNS, troubleshooting): `/root/droplet-guide/apps/claude-launchpad/deployment.md`.
+
 ## Architecture
 
 Full-stack TypeScript app: Express backend + React/Vite frontend, single repo, single `package.json`.
@@ -53,4 +69,4 @@ See `.env.example`. Key variables:
 ## Conventions
 
 - **Project memories live here, not in auto-memory.** Any preference, invariant, or working-agreement that Claude should retain across conversations belongs in this file (or in a doc delegated from here), not in `~/.claude/projects/.../memory/`. Auto-memory is per-machine and unversioned; this file is the source of truth.
-- **A session's identifier is its full tmux name (including the `" - pro"` / `" - fast"` suffix).** All uniqueness and lookup logic must operate on the full name, not on the base. Two sessions sharing a base but in different modes are distinct identifiers and may coexist. Never duplicate the suffix concatenation across layers — it lives in `suffixedName()` in `server/utils/tmux.ts` and the server is authoritative (the frontend asks `/api/sessions/suggest` for free names rather than recomputing them).
+- **A session's identifier is its full tmux name (including the `" - default"` / `" - fast"` suffix).** The `default` mode launches `claude` with no `--model` flag (inheriting the CLI's configured default); the `fast` mode passes `--model sonnet` (evergreen alias for the latest Sonnet). All uniqueness and lookup logic must operate on the full name, not on the base. Two sessions sharing a base but in different modes are distinct identifiers and may coexist. Never duplicate the suffix concatenation across layers — it lives in `suffixedName()` in `server/utils/tmux.ts` and the server is authoritative (the frontend asks `/api/sessions/suggest` for free names rather than recomputing them). The `/kill` and `/output` routes still accept the legacy `" - pro"` suffix so sessions launched before the rename remain manageable.
