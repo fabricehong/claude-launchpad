@@ -61,7 +61,20 @@ export function getSessions(creds: Credentials): Promise<ApiResult<{ sessions: S
   return request<{ sessions: Session[] }>('/api/sessions', creds);
 }
 
-export type ModelChoice = 'default' | 'fast';
+// A model is identified by its `claude --model` alias (e.g. 'opus'). The full
+// catalogue is fetched from the server so the list lives in exactly one place.
+export type ModelChoice = string;
+
+export interface ModelOption {
+  id: string;
+  label: string;
+}
+
+export function getModels(
+  creds: Credentials
+): Promise<ApiResult<{ models: ModelOption[]; default: string }>> {
+  return request<{ models: ModelOption[]; default: string }>('/api/sessions/models', creds);
+}
 
 export function suggestSessionName(
   creds: Credentials,
@@ -77,7 +90,7 @@ export function startSession(
   dir: string,
   name: string,
   continueConversation = false,
-  model: ModelChoice = 'default'
+  model: ModelChoice = 'opus'
 ): Promise<ApiResult<{ ok: boolean; name: string; dir: string }>> {
   return request('/api/sessions/start', creds, {
     method: 'POST',

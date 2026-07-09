@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
-import { listSessions, hasSession, startSession, killSession, capturePane, suffixedName, findFreeBaseName, type ModelChoice } from '../utils/tmux.js';
+import { listSessions, hasSession, startSession, killSession, capturePane, suffixedName, findFreeBaseName, MODELS, DEFAULT_MODEL, isValidModel, type ModelChoice } from '../utils/tmux.js';
 
 function deriveBaseFromDir(dir: string): string {
   const segment = dir.split('/').filter(Boolean).pop() ?? 'session';
@@ -10,10 +10,14 @@ function deriveBaseFromDir(dir: string): string {
 const router = Router();
 const ROOT = path.resolve(process.env.ROOT_DIR ?? '/root');
 const VALID_NAME = /^[a-zA-Z0-9_-]+$/;
-// Accepts bare names ("mon-repo") and suffixed names ("mon-repo - default" / " - fast")
-// since /kill and /output target whatever already exists in tmux. "pro" is kept for
-// backward compatibility with sessions launched before the "pro" -> "default" rename.
-const VALID_FULL_NAME = /^[a-zA-Z0-9_-]+(?: - (?:default|pro|fast))?$/;
+// Accepts bare names ("mon-repo") and suffixed names ("mon-repo - opus") since
+// /kill and /output target whatever already exists in tmux. Current suffixes come
+// from the model catalogue; the legacy "default"/"pro"/"fast" suffixes are kept so
+// sessions launched before the model-list rename stay manageable.
+const LEGACY_SUFFIXES = ['default', 'pro', 'fast'];
+const VALID_FULL_NAME = new RegExp(
+  `^[a-zA-Z0-9_-]+(?: - (?:${[...MODELS.map(m => m.id), ...LEGACY_SUFFIXES].join('|')}))?$`
+);
 
 router.get('/', async (_req, res) => {
   try {
@@ -23,6 +27,11 @@ router.get('/', async (_req, res) => {
     console.error('[sessions/list] Failed to list sessions:', err);
     res.status(500).json({ error: 'Failed to list sessions' });
   }
+});
+
+// The catalogue of selectable models, so the frontend never hardcodes the list.
+router.get('/models', (_req, res) => {
+  res.json({ models: MODELS, default: DEFAULT_MODEL });
 });
 
 router.get('/suggest', async (req, res) => {
@@ -37,7 +46,7 @@ router.get('/suggest', async (req, res) => {
     res.status(403).json({ error: 'Access denied' });
     return;
   }
-  const modelChoice: ModelChoice = modelParam === 'fast' ? 'fast' : 'default';
+  const modelChoice: ModelChoice = isValidModel(modelParam) ? modelParam : DEFAULT_MODEL;
   const base = deriveBaseFromDir(resolved);
   const suggested = await findFreeBaseName(base, modelChoice);
   res.json({ name: suggested });
@@ -51,7 +60,7 @@ router.post('/start', async (req, res) => {
     model?: ModelChoice;
   };
 
-  const modelChoice: ModelChoice = model === 'fast' ? 'fast' : 'default';
+  const modelChoice: ModelChoice = isValidModel(model ?? '') ? (model as ModelChoice) : DEFAULT_MODEL;
 
   if (!name || !VALID_NAME.test(name)) {
     res.status(400).json({ error: 'Invalid session name (only a-z, A-Z, 0-9, _ and - allowed)' });
