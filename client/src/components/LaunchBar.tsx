@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
-import type { Credentials, ModelChoice } from '../api.ts';
-import { startSession, suggestSessionName } from '../api.ts';
+import type { Credentials, ModelChoice, ModelOption } from '../api.ts';
+import { startSession, suggestSessionName, getModels } from '../api.ts';
 
 interface Props {
   creds: Credentials;
@@ -12,12 +12,25 @@ interface Props {
 export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Props) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState<ModelChoice>('default');
+  const [model, setModel] = useState<ModelChoice>('opus');
+  const [models, setModels] = useState<ModelOption[]>([]);
   const userEditedRef = useRef(false);
 
   useEffect(() => {
     userEditedRef.current = false;
   }, [dir]);
+
+  // Load the model catalogue from the server (single source of truth). Keep the
+  // current selection if it's still valid, otherwise fall back to the server default.
+  useEffect(() => {
+    let cancelled = false;
+    getModels(creds).then(({ data }) => {
+      if (cancelled || !data) return;
+      setModels(data.models);
+      setModel(prev => (data.models.some(m => m.id === prev) ? prev : data.default));
+    });
+    return () => { cancelled = true; };
+  }, [creds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,47 +93,28 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
       }}>
         {dir}
       </p>
-      <div
-        role="radiogroup"
+      <select
         aria-label="Model"
+        value={model}
+        onChange={e => setModel(e.target.value)}
         style={{
-          display: 'inline-flex',
+          display: 'block',
           background: '#0f1117',
           border: '1px solid #2d3748',
           borderRadius: '6px',
-          padding: '2px',
+          color: '#e2e8f0',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          padding: '0.35rem 0.6rem',
           marginBottom: '0.5rem',
-          gap: '2px',
+          cursor: 'pointer',
+          outline: 'none',
         }}
       >
-        {([
-          { value: 'default', label: 'Default' },
-          { value: 'fast', label: 'Fast' },
-        ] as const).map(opt => {
-          const active = model === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setModel(opt.value)}
-              style={{
-                background: active ? '#4f46e5' : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                color: active ? '#fff' : '#a0aec0',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                padding: '0.25rem 0.75rem',
-                cursor: 'pointer',
-              }}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
+        {(models.length ? models : [{ id: model, label: model }]).map(m => (
+          <option key={m.id} value={m.id}>{m.label}</option>
+        ))}
+      </select>
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <input
           type="text"
