@@ -5,9 +5,10 @@ import SessionItem from './SessionItem.tsx';
 interface Props {
   creds: Credentials;
   onToast: (message: string, variant: 'success' | 'error') => void;
+  onSessionKilled: () => void;
 }
 
-export default function SessionList({ creds, onToast }: Props) {
+export default function SessionList({ creds, onToast, onSessionKilled }: Props) {
   const { sessions, loading, refresh } = useSessions(creds);
 
   return (
@@ -38,7 +39,7 @@ export default function SessionList({ creds, onToast }: Props) {
             key={session.name}
             session={session}
             creds={creds}
-            onKilled={refresh}
+            onKilled={() => { refresh(); onSessionKilled(); }}
             onToast={onToast}
           />
         ))}
