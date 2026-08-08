@@ -61,6 +61,21 @@ export function getSessions(creds: Credentials): Promise<ApiResult<{ sessions: S
   return request<{ sessions: Session[] }>('/api/sessions', creds);
 }
 
+// Mirrors MemoryInfo in server/utils/memory.ts. availableBytes is MemAvailable
+// (reclaimable cache included), not MemFree. Swap figures are null when the
+// server couldn't read /proc/meminfo.
+export interface MemoryInfo {
+  totalBytes: number;
+  availableBytes: number;
+  swapTotalBytes: number | null;
+  swapUsedBytes: number | null;
+  sampledAt: number;
+}
+
+export function getMemory(creds: Credentials): Promise<ApiResult<MemoryInfo>> {
+  return request<MemoryInfo>('/api/system/memory', creds);
+}
+
 // A model is identified by its `claude --model` alias (e.g. 'opus'). The full
 // catalogue is fetched from the server so the list lives in exactly one place.
 export type ModelChoice = string;

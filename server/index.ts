@@ -5,6 +5,7 @@ import { dirname, join } from 'path';
 import auth from './middleware/auth.js';
 import browseRouter from './routes/browse.js';
 import sessionsRouter from './routes/sessions.js';
+import systemRouter from './routes/system.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.static(join(__dirname, 'public')));
 app.use('/api', auth);
 app.use('/api/browse', browseRouter);
 app.use('/api/sessions', sessionsRouter);
+app.use('/api/system', systemRouter);
 
 app.get('{*splat}', (_req, res) => {
   res.sendFile(join(__dirname, 'public', 'index.html'));

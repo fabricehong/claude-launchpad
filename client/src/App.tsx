@@ -5,6 +5,7 @@ import Header from './components/Header.tsx';
 import FileBrowser from './components/FileBrowser.tsx';
 import SessionList from './components/SessionList.tsx';
 import Toast from './components/Toast.tsx';
+import { useMemory } from './hooks/useMemory.ts';
 import './index.css';
 
 export interface ToastState {
@@ -19,6 +20,8 @@ export default function App() {
   const [selectedDir, setSelectedDir] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('browse');
+  // Called before the auth check below, so it must tolerate creds === null.
+  const { memory, refresh: refreshMemory, refreshSoon: refreshMemorySoon } = useMemory(creds);
 
   function showToast(message: string, variant: 'success' | 'error') {
     setToast({ message, variant });
@@ -30,7 +33,11 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header onLogout={() => setCreds(null)} />
+      <Header
+        memory={memory}
+        onRefreshMemory={refreshMemory}
+        onLogout={() => setCreds(null)}
+      />
 
       {/* Tab bar — only visible on mobile via CSS */}
       <div className="tab-bar">
@@ -58,11 +65,12 @@ export default function App() {
             onSessionStarted={() => {
               setSelectedDir(null);
               setActiveTab('sessions');
+              refreshMemorySoon();
             }}
           />
         </div>
         <div className={`tab-panel${activeTab !== 'sessions' ? ' hidden' : ''}`}>
-          <SessionList creds={creds} onToast={showToast} />
+          <SessionList creds={creds} onToast={showToast} onSessionKilled={refreshMemorySoon} />
         </div>
       </main>
 
