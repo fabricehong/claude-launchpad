@@ -6,7 +6,7 @@ import LaunchBar from './LaunchBar.tsx';
 
 interface Props {
   selectedDir: string | null;
-  onSelect: (path: string) => void;
+  onSelect: (path: string | null) => void;
   onToast: (message: string, variant: 'success' | 'error') => void;
   onSessionStarted: () => void;
 }
@@ -46,31 +46,45 @@ export default function FileBrowser({ selectedDir, onSelect, onToast, onSessionS
       )}
 
       <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-        {dirs.map((dir: DirEntry) => (
-          <li key={dir.path} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-            <button
-              onClick={() => navigate(dir.path)}
-              style={dirBtnStyle}
-              title={dir.name}
-            >
-              📁 {dir.name}
-            </button>
-            <button
-              onClick={() => onSelect(selectedDir === dir.path ? null! : dir.path)}
-              style={{
-                background: selectedDir === dir.path ? '#4f46e5' : 'none',
-                border: `1px solid ${selectedDir === dir.path ? '#4f46e5' : '#2d3748'}`,
-                borderRadius: '4px',
-                color: selectedDir === dir.path ? '#fff' : '#718096',
-                fontSize: '0.7rem',
-                padding: '0.125rem 0.5rem',
-                flexShrink: 0,
-              }}
-            >
-              {selectedDir === dir.path ? '✓' : 'Select'}
-            </button>
-          </li>
-        ))}
+        {dirs.map((dir: DirEntry) => {
+          const active = selectedDir === dir.path;
+          return (
+            <li key={dir.path} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              minWidth: 0,
+              borderRadius: '6px',
+              borderLeft: `3px solid ${active ? '#4f46e5' : 'transparent'}`,
+              background: active ? 'rgba(79, 70, 229, 0.15)' : 'transparent',
+              paddingRight: '0.25rem',
+            }}>
+              <button
+                onClick={() => navigate(dir.path)}
+                style={{ ...dirBtnStyle, color: active ? '#e2e8f0' : '#cbd5e0', fontWeight: active ? 600 : 400 }}
+                title={dir.name}
+              >
+                📁 {dir.name}
+              </button>
+              {/* Same label whatever the state: only one folder can be picked, the row
+                  highlight shows which one. Clicking the active row again closes the panel. */}
+              <button
+                onClick={() => onSelect(active ? null : dir.path)}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${active ? '#4f46e5' : '#2d3748'}`,
+                  borderRadius: '4px',
+                  color: active ? '#a5b4fc' : '#718096',
+                  fontSize: '0.7rem',
+                  padding: '0.125rem 0.5rem',
+                  flexShrink: 0,
+                }}
+              >
+                Launch…
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       {selectedDir && (
@@ -78,6 +92,7 @@ export default function FileBrowser({ selectedDir, onSelect, onToast, onSessionS
           dir={selectedDir}
           onToast={onToast}
           onSessionStarted={onSessionStarted}
+          onClose={() => onSelect(null)}
         />
       )}
     </section>

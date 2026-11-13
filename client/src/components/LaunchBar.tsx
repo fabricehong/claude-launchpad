@@ -6,9 +6,10 @@ interface Props {
   dir: string;
   onToast: (message: string, variant: 'success' | 'error') => void;
   onSessionStarted: () => void;
+  onClose: () => void;
 }
 
-export default function LaunchBar({ dir, onToast, onSessionStarted }: Props) {
+export default function LaunchBar({ dir, onToast, onSessionStarted, onClose }: Props) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState<ModelChoice>('opus');
@@ -76,22 +77,50 @@ export default function LaunchBar({ dir, onToast, onSessionStarted }: Props) {
   }
 
   return (
+    // Sticky: as the last child of the Browse section, it floats at the bottom of the
+    // viewport while a long folder list is scrolled, instead of appearing off-screen.
     <div style={{
+      position: 'sticky',
+      bottom: 0,
+      zIndex: 10,
       marginTop: '1rem',
       background: '#1e2535',
-      border: '1px solid #2d3748',
+      border: '1px solid #4f46e5',
       borderRadius: '8px',
       padding: '0.875rem',
+      boxShadow: '0 -6px 16px rgba(0, 0, 0, 0.45)',
     }}>
-      <p style={{
-        fontSize: '0.75rem',
-        color: '#718096',
-        marginBottom: '0.5rem',
-        fontFamily: 'monospace',
-        overflowWrap: 'anywhere',
-      }}>
-        {dir}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#e2e8f0', overflowWrap: 'anywhere' }}>
+            📁 {dir.split('/').filter(Boolean).pop() ?? dir}
+          </p>
+          <p style={{
+            fontSize: '0.75rem',
+            color: '#718096',
+            fontFamily: 'monospace',
+            overflowWrap: 'anywhere',
+          }}>
+            {dir}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#718096',
+            fontSize: '1.125rem',
+            lineHeight: 1,
+            padding: '0.125rem 0.25rem',
+            flexShrink: 0,
+          }}
+        >
+          ✕
+        </button>
+      </div>
       <select
         aria-label="Model"
         value={model}
