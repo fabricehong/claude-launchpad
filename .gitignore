@@ -11,3 +11,6 @@ dist/
 # only the optimized docs/demo.gif is committed.
 docs/others
 
+
+# Machine-specific Claude notes (deployment of this install) — never committed
+CLAUDE.local.md
