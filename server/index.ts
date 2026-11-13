@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import auth from './middleware/auth.js';
+import { requireAuth, loginRouter } from './middleware/auth.js';
 import browseRouter from './routes/browse.js';
 import sessionsRouter from './routes/sessions.js';
 import systemRouter from './routes/system.js';
@@ -14,7 +14,8 @@ const port = process.env.PORT ?? 3456;
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-app.use('/api', auth);
+app.use('/api', loginRouter);
+app.use('/api', requireAuth);
 app.use('/api/browse', browseRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/system', systemRouter);

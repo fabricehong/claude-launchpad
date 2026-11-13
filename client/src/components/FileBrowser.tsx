@@ -1,19 +1,18 @@
 import type { CSSProperties } from 'react';
-import type { Credentials, DirEntry } from '../api.ts';
+import type { DirEntry } from '../api.ts';
 import { useBrowse } from '../hooks/useBrowse.ts';
 import Breadcrumb from './Breadcrumb.tsx';
 import LaunchBar from './LaunchBar.tsx';
 
 interface Props {
-  creds: Credentials;
   selectedDir: string | null;
   onSelect: (path: string) => void;
   onToast: (message: string, variant: 'success' | 'error') => void;
   onSessionStarted: () => void;
 }
 
-export default function FileBrowser({ creds, selectedDir, onSelect, onToast, onSessionStarted }: Props) {
-  const { rootDir, current, parent, dirs, loading, error, navigate } = useBrowse(creds);
+export default function FileBrowser({ selectedDir, onSelect, onToast, onSessionStarted }: Props) {
+  const { rootDir, current, parent, dirs, loading, error, navigate } = useBrowse();
 
   return (
     <section style={{
@@ -76,7 +75,6 @@ export default function FileBrowser({ creds, selectedDir, onSelect, onToast, onS
 
       {selectedDir && (
         <LaunchBar
-          creds={creds}
           dir={selectedDir}
           onToast={onToast}
           onSessionStarted={onSessionStarted}

@@ -1,9 +1,8 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import type { Credentials } from '../api.ts';
-import { getSessions } from '../api.ts';
+import { login } from '../api.ts';
 
 interface Props {
-  onAuth: (creds: Credentials) => void;
+  onAuth: () => void;
 }
 
 export default function AuthScreen({ onAuth }: Props) {
@@ -17,8 +16,7 @@ export default function AuthScreen({ onAuth }: Props) {
     setError('');
     setLoading(true);
 
-    const creds = { username, password };
-    const { error: err } = await getSessions(creds);
+    const { error: err } = await login(username, password);
 
     setLoading(false);
 
@@ -27,7 +25,7 @@ export default function AuthScreen({ onAuth }: Props) {
       return;
     }
 
-    onAuth(creds);
+    onAuth();
   }
 
   return (

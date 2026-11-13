@@ -72,7 +72,8 @@ If you want to *type* into a terminal from your phone, pick one of the others. I
 - 🚀 Launch `claude --remote-control` in a fresh tmux session
 - 👀 Live tmux pane output viewer for debugging
 - ☠️ One-click kill for any session
-- 🔐 Stateless header-based auth
+- 🔐 Login once, stay signed in for 3 weeks (signed HttpOnly cookie)
+- 📱 Installable as a PWA on Android
 
 ## Requirements
 
@@ -133,7 +134,7 @@ Or use a systemd unit, pm2, Docker, etc. Any process supervisor works.
 
 ## Exposing safely
 
-The built-in auth is a minimal shared-secret check over plaintext headers. Before exposing Launchpad to the public internet you **must** either:
+The built-in auth is a minimal shared-secret login that sets a signed session cookie. Before exposing Launchpad to the public internet you **must** either:
 
 - Put it behind HTTPS with a reverse proxy (nginx, Caddy, Traefik), **or**
 - Keep it on a private network (Tailscale, WireGuard, ZeroTier), **or**
@@ -148,7 +149,7 @@ Full-stack TypeScript, single `package.json`. In production, the React build is 
 ```
 server/
 ├── index.ts              # Express entry point
-├── middleware/auth.ts    # x-username / x-password header check
+├── middleware/auth.ts    # login/logout + signed session cookie check
 ├── routes/
 │   ├── browse.ts         # GET /api/browse?path=
 │   └── sessions.ts       # GET/POST /api/sessions{,/start,/kill,/output/:name}
@@ -158,7 +159,7 @@ client/src/
 ├── App.tsx               # Auth + tab state
 ├── components/           # FileBrowser, SessionList, AuthScreen, LaunchBar, …
 ├── hooks/                # useBrowse, useSessions (5s polling)
-└── api.ts                # All fetch calls, credentials injected as headers
+└── api.ts                # All fetch calls (auth via session cookie)
 ```
 
 tmux is the session-persistence backend today, but the abstraction is small (all of `server/utils/tmux.ts`) — swapping to systemd user units or another process manager is a focused change.

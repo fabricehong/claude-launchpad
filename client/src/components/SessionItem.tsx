@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Session, Credentials } from '../api.ts';
+import type { Session } from '../api.ts';
 import { killSession, getSessionOutput } from '../api.ts';
 
 interface Props {
   session: Session;
-  creds: Credentials;
   onKilled: () => void;
   onToast: (message: string, variant: 'success' | 'error') => void;
 }
@@ -17,14 +16,14 @@ function elapsed(created: number): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
-export default function SessionItem({ session, creds, onKilled, onToast }: Props) {
+export default function SessionItem({ session, onKilled, onToast }: Props) {
   const [showOutput, setShowOutput] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [outputLoading, setOutputLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function fetchOutput() {
-    const { data, error } = await getSessionOutput(creds, session.name);
+    const { data, error } = await getSessionOutput(session.name);
     if (error) {
       setOutput(`Error: ${error}`);
     } else if (data) {
@@ -46,7 +45,7 @@ export default function SessionItem({ session, creds, onKilled, onToast }: Props
   async function handleKill() {
     if (!confirm(`Kill session "${session.name}"?`)) return;
 
-    const { error } = await killSession(creds, session.name);
+    const { error } = await killSession(session.name);
     if (error) {
       onToast(error, 'error');
       return;

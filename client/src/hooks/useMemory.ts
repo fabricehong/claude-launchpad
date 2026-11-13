@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Credentials, MemoryInfo } from '../api.ts';
+import type { MemoryInfo } from '../api.ts';
 import { getMemory } from '../api.ts';
 
 // Delay before re-measuring after a session start/kill: the claude process needs
@@ -12,18 +12,18 @@ const VISIBILITY_THROTTLE_MS = 15000;
 // Deliberately has no polling interval: memory is fetched on mount, on demand,
 // a few seconds after a session starts or dies, and when the tab regains focus.
 // Nothing runs in the background while the phone is asleep.
-// `creds` is null on the auth screen, where there is nothing to fetch yet.
-export function useMemory(creds: Credentials | null) {
+// `enabled` is false on the auth screen, where there is nothing to fetch yet.
+export function useMemory(enabled: boolean) {
   const [memory, setMemory] = useState<MemoryInfo | null>(null);
   const lastFetchRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!creds) return;
+    if (!enabled) return;
     lastFetchRef.current = Date.now();
-    const { data } = await getMemory(creds);
+    const { data } = await getMemory();
     if (data) setMemory(data);
-  }, [creds]);
+  }, [enabled]);
 
   const refreshSoon = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

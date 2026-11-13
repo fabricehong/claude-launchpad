@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { Credentials } from './api.ts';
+import { useState, useEffect } from 'react';
+import { getSessions, logout, setUnauthorizedHandler } from './api.ts';
 import AuthScreen from './components/AuthScreen.tsx';
 import Header from './components/Header.tsx';
 import FileBrowser from './components/FileBrowser.tsx';
@@ -16,19 +16,29 @@ export interface ToastState {
 type Tab = 'browse' | 'sessions';
 
 export default function App() {
-  const [creds, setCreds] = useState<Credentials | null>(null);
+  // null = still checking whether the session cookie is valid.
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [selectedDir, setSelectedDir] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('browse');
-  // Called before the auth check below, so it must tolerate creds === null.
-  const { memory, refresh: refreshMemory, refreshSoon: refreshMemorySoon } = useMemory(creds);
+  const [activeTab, setActiveTab] = useState<Tab>('sessions');
+  // Called before the auth check below, so it must tolerate authed !== true.
+  const { memory, refresh: refreshMemory, refreshSoon: refreshMemorySoon } = useMemory(authed === true);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => setAuthed(false));
+    getSessions().then(({ error }) => setAuthed(!error));
+  }, []);
 
   function showToast(message: string, variant: 'success' | 'error') {
     setToast({ message, variant });
   }
 
-  if (!creds) {
-    return <AuthScreen onAuth={setCreds} />;
+  if (authed === null) {
+    return null;
+  }
+
+  if (!authed) {
+    return <AuthScreen onAuth={() => setAuthed(true)} />;
   }
 
   return (
@@ -36,7 +46,7 @@ export default function App() {
       <Header
         memory={memory}
         onRefreshMemory={refreshMemory}
-        onLogout={() => setCreds(null)}
+        onLogout={() => { void logout().then(() => setAuthed(false)); }}
       />
 
       {/* Tab bar — only visible on mobile via CSS */}
@@ -58,7 +68,6 @@ export default function App() {
       <main className="app-main">
         <div className={`tab-panel${activeTab !== 'browse' ? ' hidden' : ''}`}>
           <FileBrowser
-            creds={creds}
             selectedDir={selectedDir}
             onSelect={setSelectedDir}
             onToast={showToast}
@@ -70,7 +79,7 @@ export default function App() {
           />
         </div>
         <div className={`tab-panel${activeTab !== 'sessions' ? ' hidden' : ''}`}>
-          <SessionList creds={creds} onToast={showToast} onSessionKilled={refreshMemorySoon} />
+          <SessionList onToast={showToast} onSessionKilled={refreshMemorySoon} />
         </div>
       </main>
 

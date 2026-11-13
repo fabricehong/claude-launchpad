@@ -25,14 +25,14 @@ Full-stack TypeScript app: Express backend + React/Vite frontend, single repo, s
 ### Server (`server/`)
 
 - `index.ts` — Express entry point, static serving, route mounting
-- `middleware/auth.ts` — stateless auth via `x-username` / `x-password` headers on all `/api/*` routes
+- `middleware/auth.ts` — `POST /api/login` / `POST /api/logout` (public) and `requireAuth`, which checks the signed `lp_session` cookie on every other `/api/*` route
 - `routes/browse.ts` — `GET /api/browse?path=` — lists non-hidden subdirectories; path must stay under `ROOT_DIR`
 - `routes/sessions.ts` — `GET /api/sessions`, `POST /api/sessions/start`, `POST /api/sessions/kill`, `GET /api/sessions/output/:name`
 - `utils/tmux.ts` — all tmux interactions (`tmux ls`, `new-session`, `send-keys`, `kill-session`, `capture-pane`)
 
 ### Client (`client/src/`)
 
-- `api.ts` — all fetch calls (`listSessions`, `startSession`, `getSessionOutput`, `killSession`, `browse`); credentials injected as headers on every request
+- `api.ts` — all fetch calls (`listSessions`, `startSession`, `getSessionOutput`, `killSession`, `browse`); auth rides on the session cookie; any 401 triggers the handler set by `setUnauthorizedHandler` (App → back to login)
 - `App.tsx` — auth state, tab state (mobile), toast state; renders `FileBrowser` + `SessionList`
 - `hooks/useBrowse.ts` — fetches `GET /api/browse`, tracks `rootDir` (set once from first response, never hardcoded)
 - `hooks/useSessions.ts` — fetches sessions, polls every 5 seconds
@@ -40,7 +40,8 @@ Full-stack TypeScript app: Express backend + React/Vite frontend, single repo, s
 ### Key design decisions
 
 - **No hardcoded `/root`** — `ROOT_DIR` comes from `.env` server-side; client discovers the root from the first browse API response
-- **Auth is stateless** — credentials live in React state only (no localStorage, no cookies, no JWT); lost on tab close
+- **Auth = signed HttpOnly cookie, 3 weeks** — `lp_session=<expiresAt>.<HMAC>`; the HMAC key is derived from `AUTH_PASSWORD`, so there's no extra secret and changing the password logs everyone out. Fixed expiry (no sliding). The password is never stored client-side (no localStorage, no credentials in headers).
+- **PWA** — hand-written `client/public/manifest.webmanifest` + `sw.js` (no `vite-plugin-pwa`). The service worker caches **nothing** on purpose: it only exists to make the app installable; the app is useless offline and a cache would risk stale bundles.
 - **tmux = session persistence** — each claude session is a named tmux session; `claude --remote-control <label>` is sent via `send-keys`
 - **Mobile layout** — two-column grid on desktop, tab-based (`Browse` / `Sessions`) on mobile (≤700px via CSS classes in `index.css`)
 

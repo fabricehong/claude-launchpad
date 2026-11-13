@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
-import type { Credentials, ModelChoice, ModelOption } from '../api.ts';
+import type { ModelChoice, ModelOption } from '../api.ts';
 import { startSession, suggestSessionName, getModels } from '../api.ts';
 
 interface Props {
-  creds: Credentials;
   dir: string;
   onToast: (message: string, variant: 'success' | 'error') => void;
   onSessionStarted: () => void;
 }
 
-export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Props) {
+export default function LaunchBar({ dir, onToast, onSessionStarted }: Props) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState<ModelChoice>('opus');
@@ -24,22 +23,22 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
   // current selection if it's still valid, otherwise fall back to the server default.
   useEffect(() => {
     let cancelled = false;
-    getModels(creds).then(({ data }) => {
+    getModels().then(({ data }) => {
       if (cancelled || !data) return;
       setModels(data.models);
       setModel(prev => (data.models.some(m => m.id === prev) ? prev : data.default));
     });
     return () => { cancelled = true; };
-  }, [creds]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    suggestSessionName(creds, dir, model).then(({ data }) => {
+    suggestSessionName(dir, model).then(({ data }) => {
       if (cancelled || userEditedRef.current || !data) return;
       setName(data.name);
     });
     return () => { cancelled = true; };
-  }, [creds, dir, model]);
+  }, [dir, model]);
 
   function handleNameChange(value: string) {
     userEditedRef.current = true;
@@ -50,7 +49,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
     setLoading(true);
 
     const launched = name;
-    const { error } = await startSession(creds, dir, name, continueConversation, model);
+    const { error } = await startSession(dir, name, continueConversation, model);
 
     setLoading(false);
 
@@ -67,7 +66,7 @@ export default function LaunchBar({ creds, dir, onToast, onSessionStarted }: Pro
     // (e.g. claude-launchpad-2 after claude-launchpad). Skip if the user has typed
     // something during the request.
     userEditedRef.current = false;
-    const { data } = await suggestSessionName(creds, dir, model);
+    const { data } = await suggestSessionName(dir, model);
     if (data && !userEditedRef.current) setName(data.name);
   }
 

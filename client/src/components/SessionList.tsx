@@ -1,15 +1,13 @@
-import type { Credentials } from '../api.ts';
 import { useSessions } from '../hooks/useSessions.ts';
 import SessionItem from './SessionItem.tsx';
 
 interface Props {
-  creds: Credentials;
   onToast: (message: string, variant: 'success' | 'error') => void;
   onSessionKilled: () => void;
 }
 
-export default function SessionList({ creds, onToast, onSessionKilled }: Props) {
-  const { sessions, loading, refresh } = useSessions(creds);
+export default function SessionList({ onToast, onSessionKilled }: Props) {
+  const { sessions, loading, refresh } = useSessions();
 
   return (
     <section style={{
@@ -38,7 +36,6 @@ export default function SessionList({ creds, onToast, onSessionKilled }: Props) 
           <SessionItem
             key={session.name}
             session={session}
-            creds={creds}
             onKilled={() => { refresh(); onSessionKilled(); }}
             onToast={onToast}
           />

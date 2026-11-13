@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Credentials, DirEntry } from '../api.ts';
+import type { DirEntry } from '../api.ts';
 import { browse } from '../api.ts';
 
-export function useBrowse(creds: Credentials) {
+export function useBrowse() {
   const [rootDir, setRootDir] = useState('');
   const [current, setCurrent] = useState('');
   const [parent, setParent] = useState<string | null>(null);
@@ -14,7 +14,7 @@ export function useBrowse(creds: Credentials) {
     setLoading(true);
     setError(null);
 
-    const { data, error: err } = await browse(creds, path);
+    const { data, error: err } = await browse(path);
 
     if (err || !data) {
       setError(err ?? 'Unknown error');
@@ -27,7 +27,7 @@ export function useBrowse(creds: Credentials) {
     setDirs(data.dirs);
     setRootDir(prev => prev || data.current); // set once on first load
     setLoading(false);
-  }, [creds]);
+  }, []);
 
   useEffect(() => {
     navigate(); // no path → server uses ROOT_DIR from .env
